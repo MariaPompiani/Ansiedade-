@@ -48,7 +48,7 @@ Esse projeto foi desenvolvido em Flask (back-end Python) com front-end em HTML, 
 1. Clone o repositório:
 
 ```
-git clone https://github.com/seuusuario/seuprojeto.git
+git clone https://github.com/MariaPompiani/Ansiedade-.git
 cd seuprojeto
 ```
 
