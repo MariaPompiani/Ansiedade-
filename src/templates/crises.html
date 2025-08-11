@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Crises</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script>
+        // Função para abrir o formulário
+        async function abrirFormulario(titulo, tipo, placeholder, linkTexto = null) {
+            const overlay = document.createElement('div');
+            overlay.className = 'prompt-overlay';
+
+            const container = document.createElement('div');
+            container.className = 'prompt-container';
+
+            const text = document.createElement('p');
+            text.className = 'prompt-text';
+            text.innerText = titulo;
+
+            const inputField = document.createElement('input');
+            inputField.className = 'prompt-input';
+            inputField.type = tipo;
+            inputField.placeholder = placeholder;
+
+            const button = document.createElement('button');
+            button.className = 'prompt-button';
+            button.innerText = 'Avançar';
+
+            // Se os links "Esqueceu a senha?" e "Não tenho cadastro" forem passados, cria os links
+            if (linkTexto) {
+                const linkEsqueceuSenha = document.createElement('a');
+                linkEsqueceuSenha.href = '#';
+                linkEsqueceuSenha.innerText = linkTexto;
+                linkEsqueceuSenha.style.display = 'block';
+                linkEsqueceuSenha.style.marginTop = '10px';
+                linkEsqueceuSenha.style.color = '#3b5998';
+                linkEsqueceuSenha.addEventListener('click', () => {
+                    container.remove();
+                    overlay.remove();
+                    abrirFormularioEsqueceuSenha(); // Abre o segundo formulário
+                });
+
+                const linkNaoTenhoCadastro = document.createElement('a');
+                linkNaoTenhoCadastro.href = "{{ url_for('clientes') }}"; 
+                linkNaoTenhoCadastro.innerText = 'Não tenho cadastro';
+                linkNaoTenhoCadastro.style.display = 'block';
+                linkNaoTenhoCadastro.style.marginTop = '5px';
+                linkNaoTenhoCadastro.style.color = '#3b5998';
+
+                container.appendChild(linkEsqueceuSenha);
+                container.appendChild(linkNaoTenhoCadastro);
+            }
+
+
+            container.appendChild(text);
+            container.appendChild(inputField);
+            container.appendChild(button);
+            document.body.appendChild(overlay);
+            document.body.appendChild(container);
+
+            return new Promise((resolve) => {
+                button.addEventListener('click', () => {
+                    const valor = inputField.value;
+                    // Validação do email
+                    if (placeholder.toLowerCase() === 'email' && !inputField.checkValidity()) {
+                        alert('Por favor, insira um email válido.');
+                        return; // Impede o envio
+                    }
+
+                    if (valor) {
+                        container.remove();
+                        overlay.remove();
+                        resolve(valor);
+                    } else {
+                        alert(`Por favor, insira um ${placeholder.toLowerCase()}.`);
+                    }
+                });
+            });
+        }
+
+        // Função para verificar o paciente 
+        async function verificar_paciente(email, senha) {
+            try {
+                const response = await fetch('/verificar_paciente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, senha })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`Paciente encontrado! ID: ${data.paciente_id}`);
+                    console.log(`ID do paciente: ${data.paciente_id}`);
+                
+                    // Armazenar o paciente_id no campo oculto
+                    document.getElementById('paciente_id').value = data.paciente_id;
+                
+                } else {
+                    alert(data.message || 'Erro ao verificar paciente.');
+                    // Redirecionar para a página de clientes.html 
+                    window.location.href = "{{ url_for('clientes') }}";
+                }
+            } catch (error) {
+                console.error('Erro na verificação:', error);
+                alert('Erro interno. Tente novamente mais tarde.');
+            }
+        }
+
+        window.onload = async () => {
+            try {
+                const email = await abrirFormulario('Digite seu email:', 'email', 'Email', 'Esqueceu a senha?');
+                const senha = await abrirFormulario('Digite sua senha:', 'password', 'Senha', 'Esqueceu a senha?');
+
+                // Enviar dados para a API
+                await verificar_paciente(email, senha);
+            } catch (error) {
+                console.error('Erro ao capturar os dados:', error);
+            }
+        };
+
+
+        // Função para abrir o formulário
+        async function abrirFormularioAlterarCadastro(titulo, tipo, placeholder) {
+            const overlay = document.createElement('div');
+            overlay.className = 'prompt-overlay';
+
+            const container = document.createElement('div');
+            container.className = 'prompt-container';
+
+            const text = document.createElement('p');
+            text.className = 'prompt-text';
+            text.innerText = titulo;
+
+            const inputField = document.createElement('input');
+            inputField.className = 'prompt-input';
+            inputField.type = tipo;
+            inputField.placeholder = placeholder;
+
+            const button = document.createElement('button');
+            button.className = 'prompt-button';
+            button.innerText = 'Avançar';
+
+            container.appendChild(text);
+            container.appendChild(inputField);
+            container.appendChild(button);
+            document.body.appendChild(overlay);
+            document.body.appendChild(container);
+
+            return new Promise((resolve) => {
+                button.addEventListener('click', () => {
+                    const valor = inputField.value;
+                    // Validação do email
+                    if (placeholder.toLowerCase() === 'email' && !inputField.checkValidity()) {
+                        alert('Por favor, insira um email válido.');
+                        return; // Impede o envio
+                    }
+
+                    if (valor) {
+                        container.remove();
+                        overlay.remove();
+                        resolve(valor);
+                    } else {
+                        alert(`Por favor, insira um ${placeholder.toLowerCase()}.`);
+                    }
+                });
+            });
+        }
+
+        // Função para abrir o prompt de alteração de senha
+        async function abrirFormularioEsqueceuSenha() {
+            const titulo = 'Recuperação de Senha';
+
+            const email = await abrirFormularioAlterarCadastro(titulo, 'email', 'Email');
+            const cpf = await abrirFormularioAlterarCadastro(titulo, 'text', 'CPF');
+            const novaSenha = await abrirFormularioAlterarCadastro(titulo, 'password', 'Nova Senha');
+            const confirmarSenha = await abrirFormularioAlterarCadastro(titulo, 'password', 'Confirmar Nova Senha');
+
+            if (novaSenha !== confirmarSenha) {
+                alert('As senhas não coincidem. Por favor, tente novamente.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/atualizar_clientes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        email: email,
+                        cpf: cpf,
+                        novaSenha: novaSenha,
+                        confirmarSenha: confirmarSenha
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert(result.message);
+                } else {
+                    alert(result);
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar a senha:', error);
+                alert('Ocorreu um erro ao tentar atualizar sua senha.');
+            }
+        }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="navbar-brand">
+                <a href="index.html">
+                  <img src="static/imagem1.jpg" alt="Calmol Logo">
+                </a>
+              </div>
+        </div>
+    </header>
+
+    <!-- Main Banner -->
+    <section class="main-banner">
+        <div class="banner-content container">
+            <h1>Cadastro de Crises</h1>
+            <p>Preencha os detalhes abaixo para registrar uma crise e receber o apoio necessário.</p>
+        </div>
+    </section>
+
+    <!-- Navegação com Botões de Redirecionamento -->
+    <nav class="nav">
+        <a href="{{ url_for('index') }}" class="nav-button">Página Inicial</a>
+        <a href="{{ url_for('medicos') }}" class="nav-button">Cadastro de Médicos</a>
+        <a href="{{ url_for('clientes') }}" class="nav-button">Cadastro de Clientes</a>
+        <a href="{{ url_for('crises') }}" class="nav-button">Cadastro de Crises</a>
+        <a href="{{ url_for('historico') }}"class="nav-button">Histórico</a>
+        <a href="{{ url_for('call') }}" class="nav-button">Call</a>
+        <a href="{{ url_for('tecnicas') }}" class="nav-button">Técnicas que Podem Ajudar</a>
+    </nav>
+
+    <!-- Formulário de Cadastro de Crises -->
+    <main class="container">
+        <section class="form-section">
+            <div class="form-container">
+                <div class="left-side">
+                    <div class="image-container tela1">
+                        <img src="static/imagem4.jpg" alt="Ilustração Médicos" class="illustrative-image">
+                    </div>
+                <section id="mission-section-medicos" class="section-mission container">
+                    <div class="mission-services-medicos">
+                    <div class="service">
+                        <div>
+                            <h3>Dicas para Escrever Seu Texto:</h3>
+                            <ul>
+                            <li><strong>Seja honesto e aberto:</strong> Não há certo ou errado. Escreva o que realmente está acontecendo com você.</li>
+                            <li><strong>Descreva suas emoções:</strong> Fale sobre o que está sentindo, como a ansiedade, o medo ou a tensão está tomando conta de você.</li>
+                            <li><strong>Explique o impacto no seu dia a dia:</strong> Como isso está afetando seu trabalho, estudos, relacionamentos ou outras atividades.</li>
+                            <li><strong>Não se preocupe com a perfeição:</strong> O mais importante é expressar o que está passando em sua mente e coração.</li>
+                            </ul>
+                    </section>
+                </div>
+                    <form method="POST" action="/crises" class="form">
+                        <input type="hidden" id="paciente_id" name="paciente_id" value="">
+                        
+                        <label for="data">Data:</label>
+                        <input type="date" id="data" name="data" required>
+
+
+                        <label for="sintomas">Principais Sintomas:</label>
+                        <textarea id="sintomas" name="sintomas" required></textarea>
+
+                        <label for="gatilho">Algum Gatilho:</label>
+                        <input type="text" id="gatilho" name="gatilho">
+
+                        <label for="falta_de_ar">Falta de Ar:</label>
+                        <select id="falta_de_ar" name="falta_de_ar" required>
+                            <option value="1">Sim</option>
+                            <option value="0">Não</option>
+                        </select>
+
+                        <label for="nivel_sintomas">Nível dos Sintomas (1-5):</label>
+                        <input type="number" id="nivel_sintomas" name="nivel_sintomas" min="1" max="5" required>
+
+                        <button class="btn-primary" type="submit">Cadastrar</button>
+                    </form>
+            </div>            
+        </section>
+    </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content container">
+      <div class="footer-logo">
+        <a href="index.html">
+          <img src="static/imagem1.jpg" alt="Logo Calmol" width="100">
+        </a>
+      </div>
+      <nav class="footer-nav">
+        <ul>
+          <li><a href="about.html">Sobre Nós</a></li>
+          <li><a href="contact.html">Contato</a></li>
+        </ul>
+      </nav>
+      <div class="footer-text">
+        <p>&copy; <span class="year"></span> Calmol - Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+  <script src="{{ url_for('static', filename='javaScript/script.js') }}"></script>
+</body>
+</html>
